@@ -27,7 +27,7 @@ ffi.set_source('_lrzip_compress', '''
 #include <unistd.h>
 
 
-#if 0 && _POSIX_C_SOURCE >= 200809L
+#if _POSIX_C_SOURCE >= 200809L
   #define HAS_MEMSTREAM
 #endif
 
