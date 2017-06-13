@@ -7,8 +7,8 @@
     Requires lrzip to be installed.
 '''
 
-from . import _lrzip_decompress
-from . import _lrzip_compress
+import _lrzip_decompress
+import _lrzip_compress
  
 
 __version__ = '1.0.0'
