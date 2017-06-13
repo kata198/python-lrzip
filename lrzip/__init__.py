@@ -7,8 +7,7 @@
     Requires lrzip to be installed.
 '''
 
-import _lrzip_decompress
-import _lrzip_compress
+import _lrzip
  
 
 __version__ = '1.0.0'
@@ -27,20 +26,20 @@ def decompress(data):
     if not issubclass(data.__class__, bytes):
         raise ValueError('Data must be bytes for decompressing')
 
-    ffi = _lrzip_decompress.ffi
+    ffi = _lrzip.ffi
 
     buff = ffi.from_buffer(data)
 
     decompressedDataSizePtr = ffi.new('size_t*', 1)
 
-    decompressedData = _lrzip_decompress.lib.doDecompress(buff , len(data), decompressedDataSizePtr)
+    decompressedData = _lrzip.lib.doDecompress(buff , len(data), decompressedDataSizePtr)
 
     decompressedDataSize = ffi.unpack(decompressedDataSizePtr, 1)[0]
 
     ret = ffi.unpack(decompressedData, decompressedDataSize)
 
     # Manually free because we didn't create through cffi
-    _lrzip_decompress.lib._do_free(decompressedData)
+    _lrzip.lib._do_free(decompressedData)
 
     return ret
 
@@ -101,19 +100,19 @@ def compress(data, compressMode='lzma'):
         else:
             raise ValueError('Unknown compress mode: %s. See LRZIP_MODE_* variables for options.' %(repr(compressMode), ))
 
-    ffi = _lrzip_compress.ffi
+    ffi = _lrzip.ffi
 
     buff = ffi.from_buffer(data)
 
     compressedDataSizePtr = ffi.new('size_t*', 1)
 
-    compressedData = _lrzip_compress.lib.doCompress(buff , len(data), lrzipMode, compressedDataSizePtr)
+    compressedData = _lrzip.lib.doCompress(buff , len(data), lrzipMode, compressedDataSizePtr)
 
     compressedDataSize = ffi.unpack(compressedDataSizePtr, 1)[0]
 
     ret = ffi.unpack(compressedData, compressedDataSize)
 
     # Manually free because we didn't create through cffi
-    _lrzip_compress.lib._do_free(compressedData)
+    _lrzip.lib._do_free(compressedData)
 
     return ret

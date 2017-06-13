@@ -40,7 +40,7 @@ if __name__ == '__main__':
             setup_requires=['cffi>=1.0.0'],
             requires=['cffi'],
             install_requires=['cffi'],
-            cffi_modules=["lrzip/build_lrzip_decompress.py:ffi", "lrzip/build_lrzip_compress.py:ffi"],
+            cffi_modules=["lrzip/build_lrzip.py:ffi"],
             url='https://github.com/kata198/lrzip',
             maintainer_email='kata198@gmail.com',
             description=summary,
