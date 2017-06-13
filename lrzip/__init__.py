@@ -9,7 +9,13 @@
 
 from . import _lrzip_decompress
 from . import _lrzip_compress
-    
+ 
+
+__version__ = '1.0.0'
+__version_tuple__ = (1, 0, 0)
+
+__all__ = ('compress', 'decompress', 'LRZIP_MODE_COMPRESS_NONE', 'LRZIP_MODE_COMPRESS_ZPAQ', 'LRZIP_MODE_COMPRESS_BZIP2', 'LRZIP_MODE_COMPRESS_ZLIB', 'LRZIP_MODE_COMPRESS_LZO', 'LRZIP_MODE_COMPRESS_LZMA', 'LRZIP_MODE_COMPRESS_BZ2')
+
 def decompress(data):
     '''
         decompress - Decompress some lrzip-compressed data
