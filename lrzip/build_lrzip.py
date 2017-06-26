@@ -56,7 +56,7 @@ static inline FILE *_getShmFile(void *data)
     char instreamName[64];
 
 _shmfile_regen_name_retry:
-    sprintf(instreamName, "/%p_%d_%d_%d", data, rand() % 1000000, rand() % 1000000, rand() % 1000000);
+    sprintf(instreamName, "/%p_%d_%d_%d_%d", data, getpid(), rand() % 9000000, rand() % 9000000, rand() % 9000000);
 
     /*printf("Name is: %s\\n", instreamName);*/
     errno = 0;
@@ -64,6 +64,7 @@ _shmfile_regen_name_retry:
     if ( !ret )
     {
         if ( errno == EEXIST )
+            /* We generated a name that collided with another... try again! */
             goto _shmfile_regen_name_retry;
         /*fprintf(stderr, "Error is: [ %d ]  %s\\n\\n", errno, strerror(errno));*/
         return NULL;
