@@ -111,6 +111,7 @@ char *doCompress(const char *data, size_t dataSize, int compressMode, size_t *ou
 
     *outLen = outStreamSize;
 
+    fclose(inStream);
 
     return ret;
 }
@@ -191,6 +192,7 @@ char *doDecompress(const char *data, size_t dataSize, size_t *outLen)
 
     *outLen = outStreamSize;
 
+    fclose(inStream);
 
     return ret;
 }
