@@ -8,6 +8,13 @@
 # vim: syntax=c
 
 import cffi
+import os
+
+if '_HAS_LIBSHMFILE' in os.environ:
+    linkWith = ['lrzip', 'shmfile']
+    os.environ['CFLAGS'] = os.environ.get('CFLAGS', '') + ' -D_HAS_LIBSHMFILE=1'
+else:
+    linkWith = ['lrzip']
 
 ffi = cffi.FFI()
 
@@ -27,12 +34,46 @@ ffi.set_source('_lrzip', '''
 #include <fcntl.h>
 #include <unistd.h>
 
+#ifdef _HAS_LIBSHMFILE
+
+#include <shmfile.h>
+
+#endif
 
 #if _POSIX_C_SOURCE >= 200809L
   #define HAS_MEMSTREAM
+#else
+  #warning "No memstream, building without memstream support!"
 #endif
 
 #include <Lrzip.h>
+
+#ifdef _HAS_LIBSHMFILE
+
+static inline FILE *getShmFile(void *data)
+{
+    FILE *ret;
+    char instreamName[64];
+
+_shmfile_regen_name_retry:
+    sprintf(instreamName, "/%p_%d_%d_%d", data, rand() % 1000000, rand() % 1000000, rand() % 1000000);
+
+    /*printf("Name is: %s\\n", instreamName);*/
+    errno = 0;
+    ret = fshm_open(instreamName, 0600, FSHM_OWNER);
+    if ( !ret )
+    {
+        if ( errno == EEXIST )
+            goto _shmfile_regen_name_retry;
+        /*fprintf(stderr, "Error is: [ %d ]  %s\\n\\n", errno, strerror(errno));*/
+        return NULL;
+    }
+
+    return ret;
+}
+#else
+  #warning "No libshmfile! Building without shmfile support."
+#endif
 
 char *doCompress(const char *data, size_t dataSize, int compressMode, size_t *outLen)
 {
@@ -50,14 +91,26 @@ char *doCompress(const char *data, size_t dataSize, int compressMode, size_t *ou
 
       outStream = open_memstream(&outStreamBuffer, &outStreamSize);
     #else
+      #ifndef _HAS_LIBSHMFILE
       outStream = tmpfile();
+      #else
+      outStream = getShmFile((void*)data);
+      if ( !outStream )
+        outStream = tmpfile();
+      #endif
     #endif
-
 
     fflush(outStream);
 
     /* LRZIP Input not supported from memstream (requires a real fd) */
-    inStream = tmpfile();
+    #ifndef _HAS_LIBSHMFILE
+      inStream = tmpfile();
+    #else
+      inStream = getShmFile((void*)data);
+      if ( inStream == NULL )
+          inStream = tmpfile();
+    #endif
+
 
     write(fileno(inStream), data, dataSize);
 
@@ -133,13 +186,24 @@ char *doDecompress(const char *data, size_t dataSize, size_t *outLen)
 
       outStream = open_memstream(&outStreamBuffer, &outStreamSize);
     #else
+      #ifndef _HAS_LIBSHMFILE
       outStream = tmpfile();
+      #else
+      outStream = getShmFile((void*)data);
+      if ( !outStream )
+        outStream = tmpfile();
+      #endif
     #endif
 
     fflush(outStream);
 
-    /* LRZIP Input not supported from memstream (requires a real fd) */
-    inStream = tmpfile();
+    #ifndef _HAS_LIBSHMFILE
+      inStream = tmpfile();
+    #else
+      inStream = getShmFile((void*)data);
+      if ( inStream == NULL )
+          inStream = tmpfile();
+    #endif
 
     write(fileno(inStream), data, dataSize);
 
@@ -202,7 +266,7 @@ void _do_free(void *ptr)
     free(ptr);
 }
 
-''', libraries=['lrzip'])
+''', libraries=linkWith)
 
 if __name__ == '__main__':
     ffi.compile()

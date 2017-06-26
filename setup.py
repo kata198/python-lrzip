@@ -24,6 +24,10 @@ if __name__ == '__main__':
         sys.stderr.write('Exception when reading long description: %s\n' %(str(e),))
         long_description = summary
 
+    if os.path.exists('/usr/include/shmfile.h'):
+#        os.environ['CFLAGS'] = os.environ.get('CFLAGS', '') + ' -D_HAS_LIBSHMFILE=1'
+        os.environ['_HAS_LIBSHMFILE'] = '1'
+
     setup(name='lrzip',
             version='1.0.0',
             packages=['lrzip'],
