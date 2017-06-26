@@ -15,13 +15,6 @@ if __name__ == '__main__':
     if dirName and os.getcwd() != dirName:
         os.chdir(dirName)
 
-    if '--no-deps' in sys.argv:
-        requires = []
-        sys.argv.remove('--no-deps')
-    else:
-        requires = ['QueryableList']
-
-
     summary = 'Python bindings for LRZIP'
 
     try:
