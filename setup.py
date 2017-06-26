@@ -29,7 +29,7 @@ if __name__ == '__main__':
         os.environ['_HAS_LIBSHMFILE'] = '1'
 
     setup(name='lrzip',
-            version='1.0.0',
+            version='1.1.0',
             packages=['lrzip'],
             author='Tim Savannah',
             author_email='kata198@gmail.com',
