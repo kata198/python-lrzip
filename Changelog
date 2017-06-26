@@ -1,0 +1,7 @@
+1.1.0 - Jun 25 2017
+* Better handling of resources in error condition
+* Fix leaked fd
+* Detect if shmfile is present ( https://github.com/kata198/shmfile ) and if
+so, use shm files as oppose to "tmpfile" for input to liblrzip, so we are just working memory ->
+memory, no disk required (at all on POSIX, where memstream's are also
+supported)
