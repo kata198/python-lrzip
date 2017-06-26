@@ -50,7 +50,7 @@ ffi.set_source('_lrzip', '''
 
 #ifdef _HAS_LIBSHMFILE
 
-static inline FILE *getShmFile(void *data)
+static inline FILE *_getShmFile(void *data)
 {
     FILE *ret;
     char instreamName[64];
@@ -79,7 +79,7 @@ char *doCompress(const char *data, size_t dataSize, int compressMode, size_t *ou
 {
     bool success;
     Lrzip *lr;
-    char *ret;
+    char *ret = NULL;
 
     FILE *inStream;
 
@@ -94,7 +94,7 @@ char *doCompress(const char *data, size_t dataSize, int compressMode, size_t *ou
       #ifndef _HAS_LIBSHMFILE
       outStream = tmpfile();
       #else
-      outStream = getShmFile((void*)data);
+      outStream = _getShmFile((void*)data);
       if ( !outStream )
         outStream = tmpfile();
       #endif
@@ -106,7 +106,7 @@ char *doCompress(const char *data, size_t dataSize, int compressMode, size_t *ou
     #ifndef _HAS_LIBSHMFILE
       inStream = tmpfile();
     #else
-      inStream = getShmFile((void*)data);
+      inStream = _getShmFile((void*)data);
       if ( inStream == NULL )
           inStream = tmpfile();
     #endif
@@ -118,7 +118,11 @@ char *doCompress(const char *data, size_t dataSize, int compressMode, size_t *ou
 
     success = lrzip_init();
     if ( !success )
-            return NULL;
+    {
+        fclose(inStream);
+        fclose(outStream);
+        return NULL;
+    }
 
 
     lr = lrzip_new((Lrzip_Mode)compressMode);
@@ -131,38 +135,38 @@ char *doCompress(const char *data, size_t dataSize, int compressMode, size_t *ou
     lrzip_log_stderr_set(lr, NULL);
 
     success = lrzip_run(lr);
-    if ( !success )
-    {
-        fprintf(stderr, "Failed\\n");
-    }
-
 
     lrzip_free(lr);
     fflush(outStream);
+    if ( success )
+    {
 
-    #ifdef HAS_MEMSTREAM
-      ret = malloc(outStreamSize + 1);
-      memcpy(ret, outStreamBuffer, outStreamSize);
-    #else
-      fseek(outStream, 0L, SEEK_END);
-      outStreamSize = ftell(outStream);
+        #ifdef HAS_MEMSTREAM
+          ret = malloc(outStreamSize + 1);
+          memcpy(ret, outStreamBuffer, outStreamSize);
+        #else
+          fseek(outStream, 0L, SEEK_END);
+          outStreamSize = ftell(outStream);
 
-      fseek(outStream, 0L, SEEK_SET);
-      lseek(fileno(outStream), 0L, SEEK_SET);
+          fseek(outStream, 0L, SEEK_SET);
+          lseek(fileno(outStream), 0L, SEEK_SET);
 
-      ret = malloc(outStreamSize + 1);
-      fread(ret, 1, outStreamSize, outStream);
-//      read(fileno(outStream), ret, outStreamSize);
-   #endif
+          ret = malloc(outStreamSize + 1);
+          fread(ret, 1, outStreamSize, outStream);
+    //      read(fileno(outStream), ret, outStreamSize);
+       #endif
 
-    ret[outStreamSize] = '\\0';
+        ret[outStreamSize] = '\\0';
+
+        *outLen = outStreamSize;
+    }
+
     fclose(outStream);
 
     #ifdef HAS_MEMSTREAM
       free(outStreamBuffer);
     #endif
 
-    *outLen = outStreamSize;
 
     fclose(inStream);
 
@@ -174,7 +178,7 @@ char *doDecompress(const char *data, size_t dataSize, size_t *outLen)
 {
     bool success;
     Lrzip *lr;
-    char *ret;
+    char *ret = NULL;
 
     FILE *inStream;
 
@@ -189,7 +193,7 @@ char *doDecompress(const char *data, size_t dataSize, size_t *outLen)
       #ifndef _HAS_LIBSHMFILE
       outStream = tmpfile();
       #else
-      outStream = getShmFile((void*)data);
+      outStream = _getShmFile((void*)data);
       if ( !outStream )
         outStream = tmpfile();
       #endif
@@ -200,7 +204,7 @@ char *doDecompress(const char *data, size_t dataSize, size_t *outLen)
     #ifndef _HAS_LIBSHMFILE
       inStream = tmpfile();
     #else
-      inStream = getShmFile((void*)data);
+      inStream = _getShmFile((void*)data);
       if ( inStream == NULL )
           inStream = tmpfile();
     #endif
@@ -211,7 +215,11 @@ char *doDecompress(const char *data, size_t dataSize, size_t *outLen)
 
     success = lrzip_init();
     if ( !success )
-            return NULL;
+    {
+        fclose(inStream);
+        fclose(outStream);
+        return NULL;
+    }
 
 
     lr = lrzip_new(LRZIP_MODE_DECOMPRESS);
@@ -225,36 +233,35 @@ char *doDecompress(const char *data, size_t dataSize, size_t *outLen)
 
     
     success = lrzip_run(lr);
-    if ( !success )
-    {
-        fprintf(stderr, "Failed\\n");
-    }
-
 
     lrzip_free(lr);
     fflush(outStream);
 
-    #ifdef HAS_MEMSTREAM
-      ret = malloc(outStreamSize + 1);
-      memcpy(ret, outStreamBuffer, outStreamSize);
-    #else
-      fseek(outStream, 0L, SEEK_END);
-      outStreamSize = ftell(outStream);
+    if ( success )
+    {
+        #ifdef HAS_MEMSTREAM
+          ret = malloc(outStreamSize + 1);
+          memcpy(ret, outStreamBuffer, outStreamSize);
+        #else
+          fseek(outStream, 0L, SEEK_END);
+          outStreamSize = ftell(outStream);
 
-      lseek(fileno(outStream), 0L, SEEK_SET);
+          lseek(fileno(outStream), 0L, SEEK_SET);
 
-      ret = malloc(outStreamSize + 1);
-      read(fileno(outStream), ret, outStreamSize);
-   #endif
+          ret = malloc(outStreamSize + 1);
+          read(fileno(outStream), ret, outStreamSize);
+       #endif
 
-    ret[outStreamSize] = '\\0';
-    fclose(outStream);
+        ret[outStreamSize] = '\\0';
+        fclose(outStream);
+
+        *outLen = outStreamSize;
+    }
 
     #ifdef HAS_MEMSTREAM
       free(outStreamBuffer);
     #endif
 
-    *outLen = outStreamSize;
 
     fclose(inStream);
 
